@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Users & Roles (Next.js + Prisma Postgres + Vercel)
 
-## Getting Started
+End-to-end app with **User** and **Role** tables in Prisma Postgres, a `GET /users` JSON API, and a paginated home page with validation, fallback data, and failure alerts.
 
-First, run the development server:
+## Environment variables
+
+| Variable | Purpose |
+| -------- | ------- |
+| `DATABASE_URL` | **Required by Prisma** — connection string for schema & client |
+| `POSTGRES_URL` | Vercel / Prisma Postgres direct URL (set same value as `DATABASE_URL`) |
+| `PRISMA_DATABASE_URL` | Prisma Postgres URL (optional fallback) |
+
+Copy the example and paste your values from the [Prisma Data Platform](https://console.prisma.io) or Vercel storage integration:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Never commit `.env` — it is gitignored.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run db:push    # create tables (first time)
+npm run db:seed    # seed roles + sample users
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000).
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push the repo to GitHub (or GitLab / Bitbucket).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. Import the project in [Vercel](https://vercel.com/new).
 
-## Deploy on Vercel
+3. Add environment variables (from Prisma Postgres / Vercel integration — use the **same** connection string for each):
+   - `DATABASE_URL` (required)
+   - `POSTGRES_URL`
+   - `PRISMA_DATABASE_URL`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. Deploy. Vercel runs `prisma generate && next build` (see `vercel.json`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5. **One-time:** apply schema and seed the remote database from your machine (with env vars set):
+
+   ```bash
+   npm run db:push
+   npm run db:seed
+   ```
+
+   Or use the Vercel CLI after linking:
+
+   ```bash
+   vercel env pull .env.local
+   npm run db:push
+   npm run db:seed
+   ```
+
+## API
+
+`GET /users` — JSON array of users with nested role:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "role": { "id": 1, "name": "Admin" }
+  }
+]
+```
+
+## Scripts
+
+| Command | Description |
+| ------- | ----------- |
+| `npm run dev` | Dev server |
+| `npm run build` | Prisma generate + production build |
+| `npm run db:push` | Push schema to Postgres |
+| `npm run db:seed` | Seed roles and users |
+| `npm run db:studio` | Prisma Studio |
+
+## Stack
+
+- Next.js App Router
+- Prisma 6 + PostgreSQL (Prisma Postgres / Vercel)
+- TanStack Table (pagination)
+- Client-side API validation, fallback rows, dismissible failure alert
